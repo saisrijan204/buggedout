@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SubZero — Dark Crystal OTT & Subscription Finder</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Optional Parsers & Charts (With 100% Built-in Native Fallbacks if Blocked) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #F8FAFC;
+      background-color: #07090F;
+      background-image:
+        radial-gradient(at 10% 8%, rgba(168, 85, 247, 0.24) 0px, transparent 48%),
+        radial-gradient(at 90% 12%, rgba(34, 211, 238, 0.18) 0px, transparent 45%),
+        radial-gradient(at 50% 92%, rgba(99, 102, 241, 0.20) 0px, transparent 52%),
+        linear-gradient(160deg, #07090F 0%, #0B0F1A 50%, #080B14 100%);
+      background-attachment: fixed;
+      overflow-x: hidden;
+    }
+
+    /* Dark Crystal Glassmorphism */
+    .dark-crystal {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow:
+        0 20px 50px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.14);
+    }
+
+    .dark-crystal-card {
+      background: rgba(16, 20, 32, 0.78);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+    }
+
+    .crystal-dropzone {
+      background: linear-gradient(145deg, rgba(26, 32, 52, 0.75), rgba(14, 18, 30, 0.85));
+      backdrop-filter: blur(20px);
+      border: 2px dashed rgba(168, 85, 247, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    .crystal-dropzone:hover, .crystal-dropzone.drag-active {
+      border-color: #22D3EE;
+      background: linear-gradient(145deg, rgba(32, 42, 68, 0.92), rgba(16, 22, 38, 0.95));
+      box-shadow: 0 18px 45px rgba(34, 211, 238, 0.18);
+      transform: translateY(-2px);
+    }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.5); }
+    ::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.4); border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Top Dark Crystal Navbar -->
+  <header class="sticky top-0 z-40 dark-crystal-card border-x-0 border-t-0 rounded-none">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+      <!-- Brand -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 via-indigo-500 to-cyan-400 flex items-center justify-center text-slate-950 shadow-lg shadow-purple-500/30">
+          <i class="fa-solid fa-gem text-base"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-xl tracking-tight text-white">Sub<span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-300">Zero</span></span>
+            <span class="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-400/30">
+              Dark Crystal
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">OTT, Music & AI Subscription Finder</p>
+        </div>
+      </div>
+
+      <!-- 3 Main Tabs -->
+      <nav class="flex items-center gap-1 p-1 rounded-2xl dark-crystal">
+        <button type="button" onclick="switchTab('upload')" id="tab-upload" class="nav-btn px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/25">
+          <i class="fa-solid fa-cloud-arrow-up mr-1.5"></i>1. Upload Statement
+        </button>
+        <button type="button" onclick="switchTab('analytics')" id="tab-analytics" class="nav-btn px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition-all">
+          <i class="fa-solid fa-chart-pie mr-1.5 text-cyan-400"></i>2. OTT & Pie Chart
+          <span id="navSubBadge" class="ml-1 px-1.5 py-0.5 rounded-full text-[10px] bg-purple-500/30 text-purple-200 border border-purple-400/30 font-bold">6</span>
+        </button>
+        <button type="button" onclick="switchTab('pitch')" id="tab-pitch" class="nav-btn px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-400 hover:text-white transition-all">
+          <i class="fa-solid fa-bolt mr-1.5 text-amber-400"></i>3. Judge Pitch (SIP)
+        </button>
+      </nav>
+
+      <!-- Live Saved Pill -->
+      <div class="hidden md:flex items-center gap-2.5 px-3.5 py-1.5 rounded-2xl bg-emerald-500/10 border border-emerald-400/30">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <div class="text-right">
+          <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Saved / Year</p>
+          <p id="headerSavedPill" class="text-xs font-extrabold font-mono text-emerald-400">₹0 / yr</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- Top 4 KPI Cards -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div class="dark-crystal rounded-2xl p-4 sm:p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Monthly OTT & App Bleed</span>
+          <span class="w-8 h-8 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-400/30 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-indian-rupee-sign"></i>
+          </span>
+        </div>
+        <p id="kpiMonthly" class="text-2xl sm:text-3xl font-extrabold font-mono text-white mt-2">₹3,915</p>
+        <p class="text-xs text-slate-400 mt-1">Auto-debited every month</p>
+      </div>
+
+      <div class="dark-crystal rounded-2xl p-4 sm:p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Yearly Drain</span>
+          <span class="w-8 h-8 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/30 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-fire-flame-curved"></i>
+          </span>
+        </div>
+        <p id="kpiYearly" class="text-2xl sm:text-3xl font-extrabold font-mono text-cyan-300 mt-2">₹46,980</p>
+        <p class="text-xs text-slate-400 mt-1">Annual silent outflow</p>
+      </div>
+
+      <div class="dark-crystal rounded-2xl p-4 sm:p-5">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">OTT & Apps Found</span>
+          <span class="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-400/30 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-tv"></i>
+          </span>
+        </div>
+        <p id="kpiCount" class="text-2xl sm:text-3xl font-extrabold font-mono text-white mt-2">6</p>
+        <p id="kpiNoiseNote" class="text-xs text-slate-400 mt-1">Non-OTT txns ignored</p>
+      </div>
+
+      <div class="dark-crystal rounded-2xl p-4 sm:p-5 border-emerald-400/30 bg-emerald-950/20">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Money Saved</span>
+          <span class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center justify-center text-sm">
+            <i class="fa-solid fa-shield-check"></i>
+          </span>
+        </div>
+        <p id="kpiSaved" class="text-2xl sm:text-3xl font-extrabold font-mono text-emerald-400 mt-2">₹0</p>
+        <p id="kpiSavedSub" class="text-xs text-emerald-300/75 mt-1">0 mandates killed</p>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 1: BULLETPROOF FILE UPLOAD ==================== -->
+    <section id="view-upload" class="space-y-5">
+      <div class="dark-crystal rounded-3xl p-6 sm:p-8">
+        <div class="max-w-2xl mx-auto text-center space-y-2 mb-6">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/30">
+            <i class="fa-solid fa-filter"></i> Strict OTT, Music, AI & App Whitelist
+          </span>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white">
+            Upload Your Bank Statement
+          </h1>
+          <p class="text-sm text-slate-400">
+            Ignores 100% of Swiggy, Zomato, Uber, UPI transfers, bills & shopping—isolating <strong>ONLY OTT, Music, AI & App subscriptions</strong> (Netflix, Spotify, Gemini, Prime Video, Hotstar, etc.).
+          </p>
+        </div>
+
+        <!-- Bulletproof File Input + Dropzone -->
+        <div class="max-w-3xl mx-auto space-y-4">
+          <!-- Visible-to-DOM File Input (Offscreen, never display:none so sandboxed browsers always open OS picker) -->
+          <input
+            type="file"
+            id="file-input"
+            accept=".pdf,.csv,.xlsx,.xls,.txt,text/csv,text/plain,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            style="position:fixed;top:-9999px;left:-9999px;opacity:0;"
+            onchange="handleFileSelected(event)"
+          />
+
+          <div
+            id="dropZone"
+            onclick="triggerFilePicker()"
+            ondragover="handleDragOver(event)"
+            ondragleave="handleDragLeave(event)"
+            ondrop="handleFileDrop(event)"
+            class="crystal-dropzone rounded-3xl p-8 sm:p-10 text-center cursor-pointer relative overflow-hidden"
+          >
+            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-cyan-400 text-slate-950 flex items-center justify-center text-2xl mx-auto shadow-lg shadow-purple-500/30 mb-4">
+              <i class="fa-solid fa-file-arrow-up"></i>
+            </div>
+
+            <h3 class="text-lg font-extrabold text-white">
+              Click Here or Drop Any Bank Statement File
+            </h3>
+            <p class="text-xs text-slate-400 mt-1.5">
+              Works with
+              <span class="px-2 py-0.5 rounded bg-white/10 text-purple-300 font-mono">.PDF</span>
+              <span class="px-2 py-0.5 rounded bg-white/10 text-cyan-300 font-mono">.XLSX / .XLS</span>
+              <span class="px-2 py-0.5 rounded bg-white/10 text-emerald-300 font-mono">.CSV</span>
+              <span class="px-2 py-0.5 rounded bg-white/10 text-amber-300 font-mono">.TXT</span>
+            </p>
+
+            <!-- Live File Status Indicator -->
+            <div id="liveFileStatus" class="hidden mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/15 border border-cyan-400/40 text-xs font-mono text-cyan-200">
+              <i id="liveFileIcon" class="fa-solid fa-spinner fa-spin text-cyan-300"></i>
+              <span id="liveFileText">Reading statement...</span>
+            </div>
+          </div>
+
+          <!-- Primary Action Controls -->
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <button type="button" onclick="triggerFilePicker()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-purple-500/25 transition-all">
+              <i class="fa-solid fa-folder-open mr-1.5"></i>Choose Statement File
+            </button>
+
+            <button type="button" onclick="loadDemoStatement()" class="px-5 py-2.5 rounded-xl dark-crystal hover:bg-white/10 text-cyan-300 border border-cyan-400/35 text-xs sm:text-sm font-bold transition-all">
+              <i class="fa-solid fa-bolt mr-1.5"></i>Load Demo Statement
+            </button>
+
+            <button type="button" onclick="toggleStrictMode()" id="strictToggleBtn" class="px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs sm:text-sm font-bold transition-all">
+              <i class="fa-solid fa-shield-halved mr-1.5"></i>Strict OTT/Apps Only (ON)
+            </button>
+
+            <button type="button" onclick="togglePasteBox()" class="px-4 py-2.5 rounded-xl dark-crystal hover:bg-white/10 text-slate-300 text-xs sm:text-sm font-semibold transition-all">
+              <i class="fa-solid fa-paste mr-1.5"></i>Paste Statement Text
+            </button>
+          </div>
+        </div>
+
+        <!-- Instant Paste Statement Fallback Box -->
+        <div id="pasteBox" class="hidden max-w-3xl mx-auto mt-5 dark-crystal-card rounded-2xl p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold uppercase tracking-wider text-cyan-300">Paste Any Bank Statement / UPI Text Lines</span>
+            <button type="button" onclick="togglePasteBox()" class="text-xs text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i> Close</button>
+          </div>
+          <textarea id="pasteTextarea" rows="5" class="w-full rounded-xl bg-[#07090F] border border-white/15 focus:border-cyan-400 focus:outline-none p-3 font-mono text-xs text-slate-200" placeholder="Example:&#10;01/11/2026 RAZORPAY*NETFLIX_MUMBAI 649.00&#10;03/11/2026 UPI-SPOTIFY INDIA 119.00&#10;05/11/2026 GOOGLE *GEMINI_PRO 1950.00&#10;06/11/2026 UPI-SWIGGY ORDER 350.00"></textarea>
+          <div class="flex justify-end">
+            <button type="button" onclick="runStatementParser(document.getElementById('pasteTextarea').value, 'Pasted Text')" class="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-slate-950 text-xs font-extrabold shadow">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1.5"></i>Scan Pasted Lines
+            </button>
+          </div>
+        </div>
+
+        <!-- Scan Result Report Banner -->
+        <div id="scanReportBanner" class="hidden max-w-3xl mx-auto mt-6 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900/90 to-purple-950/60 border border-emerald-400/40 p-5 space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/35 text-emerald-300 flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid fa-check-double"></i>
+              </div>
+              <div>
+                <p id="reportSourceLabel" class="text-[11px] font-bold uppercase tracking-wider text-emerald-300">Scan Complete</p>
+                <h4 id="reportSummaryText" class="text-sm sm:text-base font-extrabold text-white">
+                  Scanned 30 lines → Ignored 24 non-OTT txns → Found 6 OTT & App Subscriptions!
+                </h4>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+              <button type="button" onclick="toggleIgnoredDrawer()" class="px-3 py-1.5 rounded-xl dark-crystal text-xs font-semibold text-slate-300 hover:text-white">
+                <span id="ignoredToggleLabel">View Ignored Noise</span>
+              </button>
+              <button type="button" onclick="switchTab('analytics')" class="px-4 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-cyan-500 text-slate-950 text-xs font-extrabold shadow">
+                Open Pie Chart & Subs <i class="fa-solid fa-arrow-right ml-1"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Ignored Lines Preview -->
+          <div id="ignoredDrawer" class="hidden pt-3 border-t border-white/10">
+            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+              Ignored Daily Spends / Non-OTT Rows:
+            </p>
+            <div id="ignoredLinesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-40 overflow-y-auto text-xs font-mono text-slate-400"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: OTT & APP LIST + INTERACTIVE PIE CHART ==================== -->
+    <section id="view-analytics" class="hidden space-y-5">
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Interactive Category Doughnut/Pie Chart -->
+        <div class="lg:col-span-6 dark-crystal rounded-3xl p-6 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-pie text-purple-400"></i> OTT & App Spend Breakdown
+              </h3>
+              <p class="text-xs text-slate-400">Monthly outflow share by category (₹/mo)</p>
+            </div>
+            <span id="pieTotalBadge" class="px-2.5 py-1 rounded-xl bg-purple-500/20 border border-purple-400/30 font-mono text-xs font-bold text-purple-300">
+              ₹3,915/mo
+            </span>
+          </div>
+          <div id="pieChartWrapper" class="relative h-64 w-full flex items-center justify-center">
+            <canvas id="ottPieChart"></canvas>
+          </div>
+        </div>
+
+        <!-- App-by-App Spend Bar / Breakdown -->
+        <div class="lg:col-span-6 dark-crystal rounded-3xl p-6 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base sm:text-lg font-extrabold text-white flex items-center gap-2">
+                <i class="fa-solid fa-chart-column text-cyan-400"></i> App-by-App Monthly Cost
+              </h3>
+              <p class="text-xs text-slate-400">Individual recurring OTT, Music & AI charges</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl bg-cyan-500/15 border border-cyan-400/30 font-mono text-xs font-bold text-cyan-300">
+              Live Sync
+            </span>
+          </div>
+          <div id="barChartWrapper" class="relative h-64 w-full flex items-center justify-center">
+            <canvas id="appBarChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtered OTT & App Subscriptions List -->
+      <div class="dark-crystal rounded-3xl p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/10">
+          <div>
+            <h2 class="text-xl font-extrabold text-white flex items-center gap-2">
+              Detected OTT, Music & AI Subscriptions
+              <span id="subListBadge" class="px-2.5 py-0.5 rounded-full text-xs font-mono bg-purple-500/25 text-purple-300 border border-purple-400/30">6</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">All daily expenses stripped out. Kill any unused subscription in 1 click.</p>
+          </div>
+
+          <!-- Category Filter Pills -->
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" onclick="setCategoryFilter('all')" id="cat-all" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-bold bg-purple-600 text-white shadow">
+              All
+            </button>
+            <button type="button" onclick="setCategoryFilter('Video OTT')" id="cat-Video OTT" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold dark-crystal text-cyan-300 border border-cyan-400/30">
+              Video OTT
+            </button>
+            <button type="button" onclick="setCategoryFilter('Music & Audio')" id="cat-Music & Audio" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold dark-crystal text-purple-300 border border-purple-400/30">
+              Music
+            </button>
+            <button type="button" onclick="setCategoryFilter('AI & Cloud')" id="cat-AI & Cloud" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold dark-crystal text-emerald-300 border border-emerald-400/30">
+              AI & Cloud
+            </button>
+            <button type="button" onclick="setCategoryFilter('Fitness & Apps')" id="cat-Fitness & Apps" class="cat-pill px-3.5 py-1.5 rounded-xl text-xs font-semibold dark-crystal text-amber-300 border border-amber-400/30">
+              Fitness & Apps
+            </button>
+          </div>
+        </div>
+
+        <div id="subsListContainer" class="mt-5 space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: JUDGE PITCH (SIP CALCULATOR) ==================== -->
+    <section id="view-pitch" class="hidden space-y-5">
+      <div class="dark-crystal rounded-3xl p-6 sm:p-8">
+        <div class="max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-300 border border-amber-400/30 mb-2">
+            <i class="fa-solid fa-lightbulb"></i> "Wait... Am I Still Paying For That?"
+          </span>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+            5-Year Nifty 50 SIP Opportunity Cost
+          </h2>
+          <p class="text-sm text-slate-400 mt-1">
+            Toggle forgotten OTT & AI subscriptions below to show judges how much wealth evaporates over <strong>5 years</strong> instead of compounding at 12% p.a.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6">
+          <div class="lg:col-span-7 space-y-3">
+            <div id="pitchGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            <div class="dark-crystal-card rounded-2xl p-4">
+              <div class="flex justify-between items-center mb-1.5">
+                <span class="text-xs font-bold text-slate-300">Extra Forgotten Monthly Spend</span>
+                <span id="pitchSliderVal" class="font-mono text-sm font-extrabold text-cyan-300">₹0 / mo</span>
+              </div>
+              <input id="pitchSlider" type="range" min="0" max="2000" step="50" value="0" oninput="updatePitchCalc()" class="w-full accent-purple-500 cursor-pointer" />
+            </div>
+          </div>
+
+          <div class="lg:col-span-5 rounded-3xl bg-gradient-to-br from-purple-600/90 via-indigo-700/90 to-cyan-700/90 border border-white/20 text-white p-6 shadow-2xl flex flex-col justify-between">
+            <div class="space-y-4">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-cyan-200">5-Year Wealth Impact</span>
+              <div>
+                <p class="text-xs text-purple-200">Cash Drained Every Year</p>
+                <p id="pitchYearlyDrain" class="text-2xl font-extrabold font-mono text-white">₹12,804 / yr</p>
+              </div>
+              <div class="p-4 rounded-2xl bg-black/35 backdrop-blur-md border border-white/15">
+                <p class="text-xs font-semibold text-emerald-300">5-Year Nifty 50 SIP Value Lost</p>
+                <p id="pitchSipResult" class="text-3xl sm:text-4xl font-extrabold font-mono text-white mt-1">₹88,012</p>
+                <p class="text-[11px] text-slate-300 mt-1">Compounded monthly @ 12% p.a.</p>
+              </div>
+            </div>
+            <button type="button" onclick="switchTab('upload')" class="mt-6 w-full py-3 rounded-xl bg-white text-slate-950 hover:bg-cyan-100 text-xs font-extrabold shadow transition-all">
+              Scan My Bank Statement Now <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 1-CLICK CANCEL / KILL MODAL ==================== -->
+  <div id="killModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="dark-crystal-card rounded-3xl max-w-lg w-full p-6 space-y-5 relative">
+      <button type="button" onclick="closeKillModal()" class="absolute top-4 right-4 w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-400/35 text-rose-400 flex items-center justify-center text-xl">
+          <i class="fa-solid fa-ban"></i>
+        </div>
+        <div>
+          <span class="text-[11px] font-bold uppercase tracking-wider text-rose-400">1-Click Mandate Kill Switch</span>
+          <h3 id="modalAppName" class="text-xl font-extrabold text-white">Netflix India</h3>
+          <p id="modalRawLine" class="text-xs font-mono text-slate-400">RAZORPAY*NETFLIX_MUMBAI</p>
+        </div>
+      </div>
+
+      <div class="p-3.5 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-emerald-200">Annual Savings Unlocked</p>
+          <p id="modalSaveYear" class="text-lg font-extrabold font-mono text-emerald-400">₹7,788 / year</p>
+        </div>
+        <span class="px-2.5 py-1 rounded-lg bg-emerald-500 text-slate-950 text-[11px] font-extrabold">UPI AutoPay</span>
+      </div>
+
+      <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-xs text-slate-300 space-y-1.5">
+        <p><strong>1.</strong> Open <strong>GPay / PhonePe / Paytm</strong> → Tap <strong>Profile → Autopay</strong>.</p>
+        <p><strong>2.</strong> Select <span id="modalUmn" class="font-mono font-bold text-cyan-300 bg-cyan-500/15 px-1.5 py-0.5 rounded">UMN-XXXX</span> → Tap <strong>Revoke Mandate</strong>.</p>
+      </div>
+
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Instant Cancellation Email</span>
+          <button type="button" onclick="copyEmailDraft()" class="text-xs font-bold text-cyan-400 hover:text-cyan-300">
+            <i class="fa-regular fa-copy mr-1"></i>Copy
+          </button>
+        </div>
+        <textarea id="modalEmailDraft" rows="3" readonly class="w-full rounded-xl bg-black/50 border border-white/15 p-3 text-xs font-mono text-slate-300 focus:outline-none"></textarea>
+      </div>
+
+      <div class="flex items-center justify-end gap-2.5">
+        <button type="button" onclick="closeKillModal()" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-bold">Keep</button>
+        <button type="button" onclick="confirmKillMandate()" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-purple-600 hover:from-rose-400 hover:to-purple-500 text-white text-xs font-extrabold shadow-lg">
+          <i class="fa-solid fa-check mr-1"></i>Confirm Cancel & Save ₹
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="py-4 text-center text-xs text-slate-500">
+    <strong class="text-slate-300">SubZero</strong> • TechForge Hackathon Edition • 100% Local Statement Parsing
+  </footer>
+
+  <!-- ==================== BULLETPROOF JAVASCRIPT ENGINE ==================== -->
+  <script>
+    // Safely configure PDF.js worker if available
+    try {
+      if (window.pdfjsLib && pdfjsLib.GlobalWorkerOptions) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+    } catch (e) {}
+
+    // Strict OTT, Music, AI & App Whitelist (With Standard Indian Plan Fallback Prices)
+    const OTT_WHITELIST = [
+      // Video OTT
+      { pattern: /NETFLIX/i, name: 'Netflix India', category: 'Video OTT', icon: 'fa-tv', defaultPrice: 649, risk: 'active' },
+      { pattern: /PRIME\s*VIDEO|PRIMEVIDEO|AMZN\s*\*?\s*PRIME|AMAZON\s*PRIME/i, name: 'Amazon Prime Video', category: 'Video OTT', icon: 'fa-crown', defaultPrice: 299, risk: 'active' },
+      { pattern: /JIOHOTSTAR|JIO\s*HOTSTAR|HOTSTAR|NOVI[\s_]*DIGITAL|DISNEY\s*\+?\s*HOTSTAR|JIOCINEMA/i, name: 'JioHotstar / Disney+', category: 'Video OTT', icon: 'fa-film', defaultPrice: 299, risk: 'active' },
+      { pattern: /SONYLIV|SONY\s*LIV/i, name: 'SonyLIV Premium', category: 'Video OTT', icon: 'fa-tv', defaultPrice: 299, risk: 'unused' },
+      { pattern: /ZEE5|ZEE\s*FIVE/i, name: 'ZEE5 All-Access', category: 'Video OTT', icon: 'fa-film', defaultPrice: 199, risk: 'unused' },
+      { pattern: /YOUTUBE\s*PREMIUM|GOOGLE\s*\*\s*YOUTUBE|YT\s*PREMIUM/i, name: 'YouTube Premium', category: 'Video OTT', icon: 'fa-play', defaultPrice: 149, risk: 'active' },
+      { pattern: /APPLE\s*TV/i, name: 'Apple TV+', category: 'Video OTT', icon: 'fa-tv', defaultPrice: 99, risk: 'unused' },
+      { pattern: /CRUNCHYROLL|MUBI|LIONSGATE|HOICHOI|SUN\s*NXT|AHA/i, name: 'Niche OTT Streaming', category: 'Video OTT', icon: 'fa-film', defaultPrice: 149, risk: 'unused' },
+
+      // Music & Audio
+      { pattern: /SPOTIFY/i, name: 'Spotify Premium', category: 'Music & Audio', icon: 'fa-music', defaultPrice: 119, risk: 'active' },
+      { pattern: /APPLE\s*MUSIC/i, name: 'Apple Music', category: 'Music & Audio', icon: 'fa-music', defaultPrice: 99, risk: 'active' },
+      { pattern: /YOUTUBE\s*MUSIC|YT\s*MUSIC/i, name: 'YouTube Music', category: 'Music & Audio', icon: 'fa-headphones', defaultPrice: 99, risk: 'active' },
+      { pattern: /JIOSAAVN|JIO\s*SAAVN|GAANA|WYNK/i, name: 'Music Streaming App', category: 'Music & Audio', icon: 'fa-music', defaultPrice: 99, risk: 'unused' },
+      { pattern: /AUDIBLE|KUKU\s*FM|POCKET\s*FM/i, name: 'Audiobook / Podcast App', category: 'Music & Audio', icon: 'fa-headphones', defaultPrice: 199, risk: 'unused' },
+
+      // AI & Cloud
+      { pattern: /GEMINI|GOOGLE\s*ONE|GOOGLE\s*STORAGE|GOOGLE\s*\*\s*(GEMINI|ONE)/i, name: 'Google Gemini / Google One', category: 'AI & Cloud', icon: 'fa-wand-magic-sparkles', defaultPrice: 1950, risk: 'unused' },
+      { pattern: /CHATGPT|OPENAI/i, name: 'ChatGPT Plus (OpenAI)', category: 'AI & Cloud', icon: 'fa-robot', defaultPrice: 1999, risk: 'active' },
+      { pattern: /CLAUDE|ANTHROPIC/i, name: 'Claude Pro (Anthropic)', category: 'AI & Cloud', icon: 'fa-brain', defaultPrice: 1999, risk: 'active' },
+      { pattern: /PERPLEXITY|MIDJOURNEY/i, name: 'AI Pro Subscription', category: 'AI & Cloud', icon: 'fa-sparkles', defaultPrice: 1699, risk: 'unused' },
+      { pattern: /ICLOUD|APPLE\.COM\/BILL/i, name: 'Apple iCloud+ / Apple One', category: 'AI & Cloud', icon: 'fa-cloud', defaultPrice: 75, risk: 'unused' },
+      { pattern: /CANVA|ADOBE|MICROSOFT\s*365|NOTION|DROPBOX/i, name: 'Creator / Cloud SaaS', category: 'AI & Cloud', icon: 'fa-layer-group', defaultPrice: 499, risk: 'unused' },
+
+      // Fitness & Gaming Apps
+      { pattern: /CULT\.?FIT|CURE\.?FIT|HEALTHIFY|FITTR/i, name: 'Cult.fit / Fitness App', category: 'Fitness & Apps', icon: 'fa-dumbbell', defaultPrice: 599, risk: 'unused' },
+      { pattern: /LINKEDIN/i, name: 'LinkedIn Career Premium', category: 'Fitness & Apps', icon: 'fa-briefcase', defaultPrice: 1450, risk: 'unused' },
+      { pattern: /DUOLINGO|COURSERA|UDEMY/i, name: 'Learning App Subscription', category: 'Fitness & Apps', icon: 'fa-graduation-cap', defaultPrice: 499, risk: 'unused' },
+      { pattern: /XBOX|PLAYSTATION|PS\s*PLUS|STEAM/i, name: 'Gaming Subscription Pass', category: 'Fitness & Apps', icon: 'fa-gamepad', defaultPrice: 499, risk: 'active' },
+      { pattern: /BUMBLE|TINDER/i, name: 'Social App Membership', category: 'Fitness & Apps', icon: 'fa-heart', defaultPrice: 299, risk: 'unused' }
+    ];
+
+    const GENERIC_AUTOPAY_REGEX = /AUTOPAY|MANDATE|SI_HUB|SIHUB|STANDING\s*INST|NACH|RECURRING/i;
+    const NOISE_EXCLUSION_REGEX = /SWIGGY|ZOMATO|BLINKIT|ZEPTO|INSTAMART|UBER|OLA|RAPIDO|FLIPKART|MYNTRA|AJIO|MEESHO|DMART|PETROL|HPCL|BPCL|IOCL|BESCOM|ELECTRICITY|IRCTC|INDIGO|MAKEMYTRIP|SALARY|NEFT\s*CR|IMPS\s*CR|ATM/i;
+
+    // Initial Preloaded Demo Data
+    let subscriptions = [
+      { id: 's1', name: 'Netflix India', raw: 'RAZORPAY*NETFLIX_MUMBAI_SI', umn: 'UMN-910284@okhdfcbank', category: 'Video OTT', amount: 649, risk: 'active', icon: 'fa-tv', note: 'Video OTT AutoPay mandate' },
+      { id: 's2', name: 'Spotify Premium', raw: 'SI_HUB_SPOTIFY_INDIA_119', umn: 'UMN-392014@ybl', category: 'Music & Audio', amount: 119, risk: 'active', icon: 'fa-music', note: 'Music streaming recurring debit' },
+      { id: 's3', name: 'Google Gemini / Google One', raw: 'GOOGLE *GEMINI_PRO_2TB_IN', umn: 'UMN-449102@okicici', category: 'AI & Cloud', amount: 1950, risk: 'unused', icon: 'fa-wand-magic-sparkles', note: 'AI & Cloud storage subscription' },
+      { id: 's4', name: 'Amazon Prime Video', raw: 'AMZN*PRIMEVIDEO_MEM_299', umn: 'UMN-551920@ybl', category: 'Video OTT', amount: 299, risk: 'active', icon: 'fa-crown', note: 'Prime Video OTT membership' },
+      { id: 's5', name: 'JioHotstar / Disney+', raw: 'BILLDESK*HOTSTAR_NOVI_SI', umn: 'UMN-774812@ybl', category: 'Video OTT', amount: 299, risk: 'unused', icon: 'fa-film', note: 'Video OTT recurring mandate' },
+      { id: 's6', name: 'Cult.fit / Fitness App', raw: 'RAZORPAY*CUREFIT_BLR_SI', umn: 'UMN-847291@okhdfcbank', category: 'Fitness & Apps', amount: 599, risk: 'unused', icon: 'fa-dumbbell', note: 'Fitness app AutoPay • Unused 68 days' }
+    ];
+
+    let cancelledSubs = [];
+    let strictOttOnly = true;
+    let activeCategoryFilter = 'all';
+    let ignoredCountStat = 24;
+    let targetKillId = null;
+    let pieChartInst = null;
+    let barChartInst = null;
+
+    const pitchOptions = [
+      { id: 'p1', label: 'Netflix HD (₹649)', price: 649, checked: true },
+      { id: 'p2', label: 'Spotify Premium (₹119)', price: 119, checked: true },
+      { id: 'p3', label: 'Prime Video (₹299)', price: 299, checked: true },
+      { id: 'p4', label: 'JioHotstar (₹299)', price: 299, checked: false },
+      { id: 'p5', label: 'YouTube Premium (₹149)', price: 149, checked: false },
+      { id: 'p6', label: 'Google Gemini / One (₹1,950)', price: 1950, checked: false }
+    ];
+
+    window.onload = function () {
+      refreshKPIs();
+      renderSubscriptions();
+      renderCharts();
+      renderPitchOptions();
+      updatePitchCalc();
+    };
+
+    // Tab Switcher
+    function switchTab(tab) {
+      ['upload', 'analytics', 'pitch'].forEach(t => {
+        document.getElementById(`view-${t}`).classList.add('hidden');
+        const btn = document.getElementById(`tab-${t}`);
+        btn.classList.remove('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-md', 'shadow-purple-500/25', 'font-bold');
+        btn.classList.add('text-slate-400', 'font-semibold');
+      });
+
+      document.getElementById(`view-${tab}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      activeBtn.classList.remove('text-slate-400', 'font-semibold');
+      activeBtn.classList.add('bg-gradient-to-r', 'from-purple-600', 'to-indigo-600', 'text-white', 'shadow-md', 'shadow-purple-500/25', 'font-bold');
+
+      if (tab === 'analytics') {
+        renderCharts();
+      }
+    }
+
+    // Bulletproof File Picker Trigger
+    function triggerFilePicker() {
+      const inp = document.getElementById('file-input');
+      if (inp) inp.click();
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('dropZone').classList.add('drag-active');
+    }
+
+    function handleDragLeave(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('dropZone').classList.remove('drag-active');
+    }
+
+    function handleFileDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      document.getElementById('dropZone').classList.remove('drag-active');
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length > 0) {
+        readUploadedFile(files[0]);
+      }
+    }
+
+    function handleFileSelected(e) {
+      const file = e.target && e.target.files && e.target.files[0];
+      if (file) {
+        readUploadedFile(file);
+        // Reset so re-selecting same file works
+        e.target.value = '';
+      }
+    }
+
+    function setLiveStatus(iconClass, msg, isError = false) {
+      const box = document.getElementById('liveFileStatus');
+      const ico = document.getElementById('liveFileIcon');
+      const txt = document.getElementById('liveFileText');
+      box.classList.remove('hidden', 'bg-rose-500/15', 'border-rose-400/40', 'text-rose-200', 'bg-cyan-500/15', 'border-cyan-400/40', 'text-cyan-200');
+      if (isError) {
+        box.classList.add('bg-rose-500/15', 'border-rose-400/40', 'text-rose-200');
+      } else {
+        box.classList.add('bg-cyan-500/15', 'border-cyan-400/40', 'text-cyan-200');
+      }
+      ico.className = iconClass;
+      txt.textContent = msg;
+    }
+
+    // Zero-Crash Multi-Format Reader (PDF, Excel, CSV, TXT + Raw Binary ASCII Fallback)
+    async function readUploadedFile(file) {
+      const name = file.name || 'statement';
+      const lower = name.toLowerCase();
+      setLiveStatus('fa-solid fa-spinner fa-spin text-cyan-300', `Reading "${name}" (${Math.max(1, Math.round(file.size / 1024))} KB)...`);
+
+      try {
+        let extractedText = '';
+
+        if (lower.endsWith('.pdf')) {
+          const buffer = await file.arrayBuffer();
+          // Attempt 1: PDF.js (with disableWorker:true fallback if iframe blocks external worker)
+          if (window.pdfjsLib) {
+            try {
+              const loadingTask = pdfjsLib.getDocument({ data: buffer, disableWorker: true });
+              const pdf = await loadingTask.promise;
+              for (let p = 1; p <= pdf.numPages; p++) {
+                const page = await pdf.getPage(p);
+                const tc = await page.getTextContent();
+                const linesMap = {};
+                tc.items.forEach(item => {
+                  const y = Math.round(item.transform[5] / 5) * 5;
+                  linesMap[y] = (linesMap[y] || '') + ' ' + item.str;
+                });
+                const pageLines = Object.keys(linesMap)
+                  .sort((a, b) => Number(b) - Number(a))
+                  .map(y => linesMap[y].trim());
+                extractedText += pageLines.join('\n') + '\n';
+              }
+            } catch (pdfErr) {
+              // Attempt 2: Raw ASCII/UTF-8 string extraction from PDF buffer
+              extractedText = extractPrintableStringsFromBuffer(buffer);
+            }
+          } else {
+            extractedText = extractPrintableStringsFromBuffer(buffer);
+          }
+
+          if (!extractedText || extractedText.trim().length < 15) {
+            const rawFallback = extractPrintableStringsFromBuffer(buffer);
+            if (rawFallback.trim().length > 15) extractedText = rawFallback;
+          }
+        } else if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+          const buffer = await file.arrayBuffer();
+          if (window.XLSX) {
+            try {
+              const wb = XLSX.read(buffer, { type: 'array' });
+              wb.SheetNames.forEach(sName => {
+                const rows = XLSX.utils.sheet_to_json(wb.Sheets[sName], { header: 1, defval: '' });
+                rows.forEach(r => {
+                  const line = r.map(c => String(c).trim()).filter(Boolean).join(' | ');
+                  if (line) extractedText += line + '\n';
+                });
+              });
+            } catch (xlsErr) {
+              extractedText = extractPrintableStringsFromBuffer(buffer);
+            }
+          } else {
+            extractedText = extractPrintableStringsFromBuffer(buffer);
+          }
+        } else {
+          // CSV, TSV, TXT
+          extractedText = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = ev => resolve(String(ev.target.result || ''));
+            reader.onerror = () => reject(new Error('File read error'));
+            reader.readAsText(file);
+          });
+        }
+
+        if (!extractedText || !extractedText.trim()) {
+          setLiveStatus('fa-solid fa-triangle-exclamation text-rose-400', `"${name}" had no readable text (try CSV/Excel or Paste Text).`, true);
+          showToast('Scanned image PDF detected — try CSV/TXT or Paste Text!', 'rose');
+          return;
+        }
+
+        runStatementParser(extractedText, name);
+      } catch (err) {
+        setLiveStatus('fa-solid fa-triangle-exclamation text-rose-400', `Could not read "${name}". Try Paste Text or Demo Statement.`, true);
+        showToast('Error reading file — use Paste Text or Load Demo Statement.', 'rose');
+      }
+    }
+
+    // Raw Printable ASCII/UTF-8 Extractor for Sandboxed PDFs
+    function extractPrintableStringsFromBuffer(arrayBuffer) {
+      const bytes = new Uint8Array(arrayBuffer);
+      let current = '';
+      const chunks = [];
+      for (let i = 0; i < bytes.length; i++) {
+        const b = bytes[i];
+        if ((b >= 32 && b <= 126) || b === 10 || b === 13) {
+          current += String.fromCharCode(b);
+        } else {
+          if (current.trim().length >= 5) chunks.push(current.trim());
+          current = '';
+        }
+      }
+      if (current.trim().length >= 5) chunks.push(current.trim());
+      return chunks.join('\n');
+    }
+
+    // Strict OTT, Music, AI & App Parser
+    function runStatementParser(rawText, sourceName = 'Statement') {
+      if (!rawText || !rawText.trim()) {
+        showToast('No text found to scan.', 'rose');
+        return;
+      }
+
+      const lines = rawText
+        .split(/\r?\n/)
+        .map(l => l.trim())
+        .filter(l => l.length >= 4);
+
+      const found = [];
+      const ignored = [];
+      const dedupeSet = new Set();
+
+      lines.forEach((line, idx) => {
+        // Skip column header rows
+        if (/^(date|txn\s*date|narration|description|particulars|withdrawal|deposit|balance)/i.test(line)) {
+          return;
+        }
+
+        const ottMatch = OTT_WHITELIST.find(rule => rule.pattern.test(line));
+        const isGenericAutoPay = !strictOttOnly && GENERIC_AUTOPAY_REGEX.test(line) && !NOISE_EXCLUSION_REGEX.test(line);
+
+        // Guard: exclude general Amazon retail shopping unless explicit Prime Video / Prime Membership
+        const isRetailAmazonOnly = /AMAZON/i.test(line) && !/PRIME\s*VIDEO|PRIMEVIDEO|AMZN\s*\*?\s*PRIME|AMAZON\s*PRIME/i.test(line);
+
+        if ((ottMatch || isGenericAutoPay) && !isRetailAmazonOnly) {
+          const amount = extractSmartAmount(line, ottMatch ? ottMatch.defaultPrice : 199);
+          const cleanName = ottMatch ? ottMatch.name : extractCleanAutoPayName(line);
+          const key = `${cleanName.toLowerCase()}-${amount}`;
+
+          if (!dedupeSet.has(key)) {
+            dedupeSet.add(key);
+            found.push({
+              id: `sub-${Date.now()}-${idx}`,
+              name: cleanName,
+              raw: line.slice(0, 42),
+              umn: `UMN-${Math.floor(100000 + Math.random() * 900000)}@okicici`,
+              category: ottMatch ? ottMatch.category : 'Fitness & Apps',
+              amount: amount,
+              risk: ottMatch ? ottMatch.risk : 'unused',
+              icon: ottMatch ? ottMatch.icon : 'fa-repeat',
+              note: ottMatch ? `Verified ${ottMatch.category} subscription` : 'Recurring AutoPay mandate'
+            });
+          } else {
+            ignored.push(line);
+          }
+        } else {
+          ignored.push(line);
+        }
+      });
+
+      ignoredCountStat = ignored.length;
+
+      if (found.length === 0) {
+        setLiveStatus(
+          'fa-solid fa-circle-info text-amber-300',
+          `Scanned ${lines.length} lines in "${sourceName}" — 0 OTT/App subscriptions matched.`,
+          true
+        );
+        showToast(`Scanned ${lines.length} lines — no OTT/App subscriptions found in that file.`, 'amber');
+        return;
+      }
+
+      subscriptions = found;
+      cancelledSubs = [];
+      refreshKPIs();
+      renderSubscriptions();
+      renderCharts();
+
+      setLiveStatus(
+        'fa-solid fa-circle-check text-emerald-400',
+        `Scanned ${lines.length} lines in "${sourceName}" → Found ${found.length} OTT & App Subscriptions!`
+      );
+
+      // Update Report Banner
+      document.getElementById('scanReportBanner').classList.remove('hidden');
+      document.getElementById('reportSourceLabel').textContent = `Filtered: ${sourceName}`;
+      document.getElementById('reportSummaryText').innerHTML =
+        `Scanned <span class="text-cyan-300 underline">${lines.length} lines</span> → Ignored <span class="text-slate-400">${ignored.length} non-OTT txns</span> → Found <span class="text-purple-300">${found.length} OTT & App Subscriptions!</span>`;
+
+      document.getElementById('ignoredLinesGrid').innerHTML = ignored.slice(0, 30).map(item =>
+        `<div class="px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/10 truncate" title="${item.replace(/"/g, '&quot;')}">
+          <i class="fa-solid fa-eye-slash text-slate-500 mr-1.5"></i>${item}
+        </div>`
+      ).join('');
+
+      showToast(`Found ${found.length} OTT & App subscriptions (ignored ${ignored.length} daily txns)!`, 'emerald');
+    }
+
+    // Smart Amount Extractor (Ignores dates like 2024/2025/2026 & long ref IDs > 6 digits, falls back to standard Indian plan price)
+    function extractSmartAmount(line, fallbackPrice) {
+      // Remove dates (DD/MM/YYYY, DD-MM-YY, YYYY-MM-DD)
+      let cleaned = line.replace(/\b\d{1,4}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, ' ');
+      // Remove standalone year numbers 2020-2030
+      cleaned = cleaned.replace(/\b20[2-3]\d\b/g, ' ');
+      // Remove long reference/UTR numbers (> 6 digits)
+      cleaned = cleaned.replace(/\b\d{6,}\b/g, ' ');
+
+      // 1. Explicit currency marker (₹199, Rs. 649, INR 1950)
+      const explicit = cleaned.match(/(?:₹|Rs\.?|INR)\s*([0-9,]+(?:\.\d{1,2})?)/i);
+      if (explicit) {
+        const val = Math.round(parseFloat(explicit[1].replace(/,/g, '')));
+        if (val >= 19 && val <= 15000) return val;
+      }
+
+      // 2. Decimal amount (e.g., 649.00, 119.00, 1950.00)
+      const decimals = [...cleaned.matchAll(/\b([0-9]{2,5}\.\d{2})\b/g)]
+        .map(m => Math.round(parseFloat(m[1])))
+        .filter(n => n >= 19 && n <= 15000);
+      if (decimals.length > 0) return decimals[0];
+
+      // 3. Standalone integer between 49 and 9999
+      const ints = [...cleaned.matchAll(/\b([0-9]{2,4})\b/g)]
+        .map(m => parseInt(m[1], 10))
+        .filter(n => n >= 49 && n <= 9999);
+      if (ints.length > 0) return ints[0];
+
+      return fallbackPrice;
+    }
+
+    function extractCleanAutoPayName(line) {
+      const words = line
+        .replace(/\b\d{1,4}[\/\-]\d{1,2}[\/\-]\d{2,4}\b/g, ' ')
+        .replace(/UPI|AUTOPAY|MANDATE|SI_HUB|SIHUB|RAZORPAY|BILLDESK|NACH|DR|CR|\d+/gi, ' ')
+        .replace(/[^a-zA-Z\s]/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(w => w.length > 2);
+      if (!words.length) return 'AutoPay Subscription';
+      return words.slice(0, 2).map(w => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+
+    function toggleStrictMode() {
+      strictOttOnly = !strictOttOnly;
+      const btn = document.getElementById('strictToggleBtn');
+      if (strictOttOnly) {
+        btn.className = 'px-4 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-400/40 text-emerald-300 text-xs sm:text-sm font-bold transition-all';
+        btn.innerHTML = '<i class="fa-solid fa-shield-halved mr-1.5"></i>Strict OTT/Apps Only (ON)';
+        showToast('Strict OTT & App Whitelist enabled.', 'emerald');
+      } else {
+        btn.className = 'px-4 py-2.5 rounded-xl bg-amber-500/15 border border-amber-400/40 text-amber-300 text-xs sm:text-sm font-bold transition-all';
+        btn.innerHTML = '<i class="fa-solid fa-sliders mr-1.5"></i>Show All AutoPay (ON)';
+        showToast('Generic AutoPay mandates also enabled.', 'amber');
+      }
+    }
+
+    function togglePasteBox() {
+      document.getElementById('pasteBox').classList.toggle('hidden');
+    }
+
+    function toggleIgnoredDrawer() {
+      const d = document.getElementById('ignoredDrawer');
+      const lbl = document.getElementById('ignoredToggleLabel');
+      d.classList.toggle('hidden');
+      lbl.textContent = d.classList.contains('hidden') ? 'View Ignored Noise' : 'Hide Ignored Noise';
+    }
+
+    // Instant 1-Click Demo Statement Loader
+    function loadDemoStatement() {
+      const demoCsv = `
+Date,Narration,Debit,Balance
+01/11/2026,UPI-DR-SWIGGY ORDER 88219,348.00,45120.00
+01/11/2026,RAZORPAY*NETFLIX_MUMBAI_SI,649.00,44471.00
+02/11/2026,UPI-DR-RAHUL SHARMA-rahul@okaxis,500.00,43971.00
+02/11/2026,UPI-DR-AMAZON.IN RETAIL SHOPPING,1499.00,42472.00
+03/11/2026,SI_HUB_SPOTIFY_INDIA_119,119.00,42353.00
+04/11/2026,UPI-DR-ZOMATO FOOD DELIVERY,412.00,41941.00
+05/11/2026,GOOGLE *GEMINI_PRO_2TB_IN,1950.00,39991.00
+06/11/2026,UPI-DR-UBER INDIA CABS,264.00,39727.00
+07/11/2026,AMZN*PRIMEVIDEO_MEM_299,299.00,39428.00
+08/11/2026,UPI-DR-BLINKIT GROCERIES,289.00,39139.00
+09/11/2026,BILLDESK*HOTSTAR_NOVI_SI,299.00,38840.00
+10/11/2026,UPI-DR-BESCOM ELECTRICITY BILL,1420.00,37420.00
+11/11/2026,RAZORPAY*CUREFIT_BLR_SI,599.00,36821.00
+12/11/2026,UPI-DR-YOUTUBE PREMIUM_149,149.00,36672.00
+13/11/2026,UPI-DR-HPCL PETROL PUMP,850.00,35822.00
+      `.trim();
+
+      runStatementParser(demoCsv, 'HDFC_Nov2026_Demo.csv');
+    }
+
+    // Refresh KPIs
+    function refreshKPIs() {
+      const monthly = subscriptions.reduce((sum, s) => sum + s.amount, 0);
+      const yearly = monthly * 12;
+      const savedYr = cancelledSubs.reduce((sum, s) => sum + s.amount * 12, 0);
+
+      document.getElementById('kpiMonthly').textContent = `₹${monthly.toLocaleString('en-IN')}`;
+      document.getElementById('kpiYearly').textContent = `₹${yearly.toLocaleString('en-IN')}`;
+      document.getElementById('kpiCount').textContent = subscriptions.length;
+      document.getElementById('kpiNoiseNote').textContent = `${ignoredCountStat} non-OTT txns ignored`;
+      document.getElementById('navSubBadge').textContent = subscriptions.length;
+      document.getElementById('subListBadge').textContent = subscriptions.length;
+      document.getElementById('pieTotalBadge').textContent = `₹${monthly.toLocaleString('en-IN')}/mo`;
+
+      document.getElementById('kpiSaved').textContent = `₹${savedYr.toLocaleString('en-IN')}`;
+      document.getElementById('kpiSavedSub').textContent = `${cancelledSubs.length} mandates killed`;
+      document.getElementById('headerSavedPill').textContent = `₹${savedYr.toLocaleString('en-IN')} / yr`;
+    }
+
+    // Category Filter & Render Subscriptions
+    function setCategoryFilter(cat) {
+      activeCategoryFilter = cat;
+      document.querySelectorAll('.cat-pill').forEach(btn => {
+        btn.classList.remove('bg-purple-600', 'text-white', 'shadow', 'font-bold');
+        btn.classList.add('dark-crystal', 'font-semibold');
+      });
+      const active = document.getElementById(`cat-${cat}`);
+      if (active) {
+        active.classList.remove('dark-crystal', 'font-semibold');
+        active.classList.add('bg-purple-600', 'text-white', 'shadow', 'font-bold');
+      }
+      renderSubscriptions();
+    }
+
+    function renderSubscriptions() {
+      const container = document.getElementById('subsListContainer');
+      const filtered = subscriptions.filter(s => activeCategoryFilter === 'all' || s.category === activeCategoryFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-10 rounded-2xl bg-white/5 border border-white/10">
+            <i class="fa-solid fa-sparkles text-3xl text-emerald-400 mb-2"></i>
+            <h4 class="text-base font-extrabold text-white">No Active Subscriptions Here</h4>
+            <p class="text-xs text-slate-400 mt-1">Switch category pills above or upload a bank statement.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(sub => {
+        const isTrap = sub.risk === 'unused';
+        return `
+          <div class="rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] border ${isTrap ? 'border-rose-500/35' : 'border-white/10'} p-4 sm:p-5 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center gap-3.5">
+              <div class="w-12 h-12 rounded-2xl ${isTrap ? 'bg-rose-500/15 text-rose-400 border border-rose-400/30' : 'bg-purple-500/15 text-purple-300 border border-purple-400/30'} flex items-center justify-center text-lg shrink-0">
+                <i class="fa-solid ${sub.icon}"></i>
+              </div>
+              <div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="font-extrabold text-white text-base">${sub.name}</h3>
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-400/25">${sub.category}</span>
+                  ${isTrap
+                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-rose-500/20 text-rose-300 border border-rose-400/30">Trial / Unused Trap</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">Active</span>`
+                  }
+                </div>
+                <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                  <code class="text-[11px] font-mono px-2 py-0.5 rounded-md bg-black/50 text-slate-300 border border-white/10">${sub.raw}</code>
+                  <span class="text-xs text-slate-400">${sub.note}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex sm:flex-col items-center sm:items-end justify-between gap-2 pt-3 sm:pt-0 border-t sm:border-t-0 border-white/10">
+              <div class="text-left sm:text-right">
+                <p class="font-mono font-extrabold text-lg text-white">₹${sub.amount}<span class="text-xs font-normal text-slate-400">/mo</span></p>
+                <p class="font-mono text-xs text-cyan-300">₹${(sub.amount * 12).toLocaleString('en-IN')}/yr</p>
+              </div>
+              <button type="button" onclick="openKillModal('${sub.id}')" class="px-4 py-2 rounded-xl ${isTrap ? 'bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white shadow-md' : 'bg-white/10 hover:bg-purple-600 text-white'} text-xs font-bold transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-ban"></i> Cancel / Kill Mandate
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Interactive Charts (Chart.js + Pure SVG/CSS Fallback if Offline)
+    function renderCharts() {
+      const catTotals = {};
+      subscriptions.forEach(s => {
+        catTotals[s.category] = (catTotals[s.category] || 0) + s.amount;
+      });
+
+      const labels = Object.keys(catTotals);
+      const values = Object.values(catTotals);
+      const total = values.reduce((a, b) => a + b, 0);
+      const colors = ['#A855F7', '#22D3EE', '#10B981', '#F59E0B', '#F43F5E'];
+
+      if (window.Chart) {
+        const pieCanvas = document.getElementById('ottPieChart');
+        if (pieCanvas) {
+          if (pieChartInst) pieChartInst.destroy();
+          pieChartInst = new Chart(pieCanvas.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+              labels: labels.length ? labels : ['All Cancelled'],
+              datasets: [{
+                data: values.length ? values : [1],
+                backgroundColor: values.length ? colors.slice(0, labels.length) : ['#10B981'],
+                borderColor: '#0B0F1A',
+                borderWidth: 3,
+                hoverOffset: 8
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '64%',
+              plugins: {
+                legend: {
+                  position: 'right',
+                  labels: { color: '#CBD5E1', font: { family: 'Plus Jakarta Sans', size: 11, weight: '600' }, padding: 14, usePointStyle: true }
+                },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  borderColor: 'rgba(168, 85, 247, 0.4)',
+                  borderWidth: 1,
+                  callbacks: {
+                    label: ctx => {
+                      if (!values.length) return ' ₹0/mo — 100% Saved!';
+                      const v = ctx.parsed;
+                      const pct = total > 0 ? Math.round((v / total) * 100) : 0;
+                      return ` ₹${v.toLocaleString('en-IN')}/mo (${pct}%)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        const barCanvas = document.getElementById('appBarChart');
+        if (barCanvas) {
+          if (barChartInst) barChartInst.destroy();
+          barChartInst = new Chart(barCanvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+              labels: subscriptions.map(s => s.name.split(' ')[0]),
+              datasets: [{
+                label: 'Monthly Cost (₹)',
+                data: subscriptions.map(s => s.amount),
+                backgroundColor: subscriptions.map((_, i) => colors[i % colors.length] + 'CC'),
+                borderColor: subscriptions.map((_, i) => colors[i % colors.length]),
+                borderWidth: 1.5,
+                borderRadius: 10
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  callbacks: {
+                    label: ctx => ` ₹${ctx.parsed.y.toLocaleString('en-IN')}/mo (₹${(ctx.parsed.y * 12).toLocaleString('en-IN')}/yr)`
+                  }
+                }
+              },
+              scales: {
+                x: { ticks: { color: '#94A3B8', font: { size: 11 } }, grid: { display: false } },
+                y: { beginAtZero: true, ticks: { color: '#64748B', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(255,255,255,0.06)' } }
+              }
+            }
+          });
+        }
+      } else {
+        // Pure CSS/SVG Fallback if Chart.js CDN is blocked
+        document.getElementById('pieChartWrapper').innerHTML = labels.map((lbl, idx) => {
+          const pct = total > 0 ? Math.round((values[idx] / total) * 100) : 0;
+          return `<div class="w-full mb-2">
+            <div class="flex justify-between text-xs mb-1"><span>${lbl}</span><span class="font-mono">₹${values[idx]}/mo (${pct}%)</span></div>
+            <div class="w-full h-2.5 rounded-full bg-white/10"><div class="h-2.5 rounded-full" style="width:${pct}%;background:${colors[idx % colors.length]}"></div></div>
+          </div>`;
+        }).join('');
+      }
+    }
+
+    // Kill Mandate Modal
+    function openKillModal(id) {
+      const sub = subscriptions.find(s => s.id === id);
+      if (!sub) return;
+      targetKillId = id;
+
+      document.getElementById('modalAppName').textContent = sub.name;
+      document.getElementById('modalRawLine').textContent = sub.raw;
+      document.getElementById('modalSaveYear').textContent = `₹${(sub.amount * 12).toLocaleString('en-IN')} / year`;
+      document.getElementById('modalUmn').textContent = sub.umn;
+      document.getElementById('modalEmailDraft').value =
+        `Subject: Cancel Subscription & Revoke Mandate (${sub.umn})\n\nHi Support,\nPlease cancel my ${sub.name} subscription (${sub.raw}) immediately and stop recurring debit of ₹${sub.amount}/month.\n\nThanks.`;
+
+      document.getElementById('killModal').classList.remove('hidden');
+    }
+
+    function closeKillModal() {
+      document.getElementById('killModal').classList.add('hidden');
+      targetKillId = null;
+    }
+
+    function copyEmailDraft() {
+      const ta = document.getElementById('modalEmailDraft');
+      ta.select();
+      document.execCommand('copy');
+      showToast('Cancellation email copied!', 'emerald');
+    }
+
+    function confirmKillMandate() {
+      if (!targetKillId) return;
+      const sub = subscriptions.find(s => s.id === targetKillId);
+      if (sub) {
+        subscriptions = subscriptions.filter(s => s.id !== targetKillId);
+        cancelledSubs.push(sub);
+        refreshKPIs();
+        renderSubscriptions();
+        renderCharts();
+        showToast(`Killed ${sub.name} — Saved ₹${(sub.amount * 12).toLocaleString('en-IN')}/yr!`, 'emerald');
+      }
+      closeKillModal();
+    }
+
+    // Judge Pitch SIP Simulator
+    function renderPitchOptions() {
+      document.getElementById('pitchGrid').innerHTML = pitchOptions.map(item => `
+        <button type="button" onclick="togglePitchOpt('${item.id}')" class="p-3.5 rounded-2xl border text-left transition-all flex items-center justify-between ${item.checked ? 'bg-purple-500/20 border-purple-400/60 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}">
+          <div class="flex items-center gap-2.5">
+            <span class="w-5 h-5 rounded-lg flex items-center justify-center ${item.checked ? 'bg-purple-500 text-white' : 'bg-black/40 border border-white/20'}">
+              ${item.checked ? '<i class="fa-solid fa-check text-[10px]"></i>' : ''}
+            </span>
+            <span class="text-xs font-bold">${item.label}</span>
+          </div>
+          <span class="font-mono text-xs font-extrabold ${item.checked ? 'text-cyan-300' : 'text-slate-500'}">₹${item.price}</span>
+        </button>
+      `).join('');
+    }
+
+    function togglePitchOpt(id) {
+      const item = pitchOptions.find(p => p.id === id);
+      if (item) item.checked = !item.checked;
+      renderPitchOptions();
+      updatePitchCalc();
+    }
+
+    function updatePitchCalc() {
+      const base = pitchOptions.filter(p => p.checked).reduce((s, p) => s + p.price, 0);
+      const extra = parseInt(document.getElementById('pitchSlider').value, 10) || 0;
+      document.getElementById('pitchSliderVal').textContent = `₹${extra} / mo`;
+
+      const monthly = base + extra;
+      const yearly = monthly * 12;
+      const sip5Yr = Math.round(monthly * ((Math.pow(1.01, 60) - 1) / 0.01) * 1.01);
+
+      document.getElementById('pitchYearlyDrain').textContent = `₹${yearly.toLocaleString('en-IN')} / yr`;
+      document.getElementById('pitchSipResult').textContent = `₹${sip5Yr.toLocaleString('en-IN')}`;
+    }
+
+    // Toast Helper
+    function showToast(msg, tone = 'purple') {
+      const c = document.getElementById('toastContainer');
+      const el = document.createElement('div');
+      const tones = {
+        emerald: 'bg-emerald-950/90 border-emerald-400/40 text-emerald-200',
+        rose: 'bg-rose-950/90 border-rose-400/40 text-rose-200',
+        amber: 'bg-amber-950/90 border-amber-400/40 text-amber-200',
+        purple: 'bg-purple-950/90 border-purple-400/40 text-purple-200'
+      };
+      el.className = `pointer-events-auto px-4 py-3 rounded-2xl border shadow-2xl backdrop-blur-xl text-xs font-bold flex items-center gap-2.5 transition-all duration-300 ${tones[tone] || tones.purple}`;
+      el.innerHTML = `<i class="fa-solid fa-circle-info text-sm"></i><span>${msg}</span>`;
+      c.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 300);
+      }, 3200);
+    }
+  </script>
+</body>
+</html>
